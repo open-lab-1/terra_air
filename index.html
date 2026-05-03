@@ -1,73 +1,154 @@
 <!DOCTYPE html>
+
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Terra Air</title>
-  <meta charset="utf-8">
+
   <style>
     body {
+      margin: 0;
       font-family: Arial;
-      background: #111;
-      color: #eee;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
       text-align: center;
     }
+
+    h1 {
+      padding: 20px;
+      color: #38bdf8;
+    }
+
+    #status {
+      margin-bottom: 10px;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
     .card {
-      background: #222;
-      padding: 15px;
+      background: #1e293b;
       margin: 10px;
-      border-radius: 10px;
-      display: inline-block;
-      min-width: 200px;
+      padding: 20px;
+      border-radius: 15px;
+      width: 150px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      transition: 0.3s;
     }
-    #debug {
-      margin-top: 20px;
-      font-size: 12px;
-      color: #aaa;
-      white-space: pre-wrap;
+
+    .card:hover {
+      transform: scale(1.05);
     }
+
+    .value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .ok { color: #22c55e; }
+    .warn { color: #f59e0b; }
+    .bad { color: #ef4444; }
   </style>
+
 </head>
+
 <body>
 
-<h1>🌱 Terra Air Dashboard</h1>
+<h1>🌱 Terra Air</h1>
+<div id="status">⏳ Connexion...</div>
 
-<div id="data">Chargement...</div>
+<div class="container">
 
-<div id="debug">Debug...</div>
+  <div class="card">
+    🌡 Air
+    <div id="temp_air" class="value">--</div>
+  </div>
+
+  <div class="card">
+    🌱 Sol
+    <div id="temp_sol" class="value">--</div>
+  </div>
+
+  <div class="card">
+    💧 Humidité air
+    <div id="hum_air" class="value">--</div>
+  </div>
+
+  <div class="card">
+    🌿 Humidité sol
+    <div id="hum_sol" class="value">--</div>
+  </div>
+
+  <div class="card">
+    📈 Pression
+    <div id="pression" class="value">--</div>
+  </div>
+
+  <div class="card">
+    🚰 Réservoir
+    <div id="reservoir" class="value">--</div>
+  </div>
+
+  <div class="card">
+    ⏰ Heure
+    <div id="heure" class="value">--</div>
+  </div>
+
+</div>
 
 <script>
+
 const API_URL = "https://similar-scenarios-leslie-buyer.trycloudflare.com/data";
+
+function colorize(id, value, min, max) {
+  const el = document.getElementById(id);
+  el.classList.remove("ok","warn","bad");
+
+  if (value < min) el.classList.add("bad");
+  else if (value < max) el.classList.add("warn");
+  else el.classList.add("ok");
+}
 
 async function loadData() {
   try {
-    document.getElementById("debug").innerText = "Connexion à " + API_URL;
+    document.getElementById("status").innerText = "🔄 Mise à jour...";
 
     const res = await fetch(API_URL);
+    const data = await res.json();
 
-    document.getElementById("debug").innerText += "\nStatus: " + res.status;
+    let tempAir = parseFloat(data["terra-air/temp_air"]);
+    let tempSol = parseFloat(data["terra-air/temp_sol"]);
+    let humAir = parseFloat(data["terra-air/humidite_air"]);
+    let humSol = parseFloat(data["terra-air/hum_sol"]);
+    let pression = parseFloat(data["terra-air/pression"]);
 
-    const text = await res.text();
-    document.getElementById("debug").innerText += "\nRéponse brute:\n" + text;
+    document.getElementById("temp_air").innerText = tempAir + " °C";
+    document.getElementById("temp_sol").innerText = tempSol + " °C";
+    document.getElementById("hum_air").innerText = humAir + " %";
+    document.getElementById("hum_sol").innerText = humSol + " %";
+    document.getElementById("pression").innerText = pression + " hPa";
+    document.getElementById("reservoir").innerText = data["terra-air/reservoir"];
+    document.getElementById("heure").innerText = data["terra-air/heure"];
 
-    const d = JSON.parse(text);
+    // couleurs intelligentes
+    colorize("hum_sol", humSol, 30, 60);
+    colorize("hum_air", humAir, 40, 70);
+    colorize("temp_air", tempAir, 10, 25);
 
-    document.getElementById("data").innerHTML = `
-      <div class="card">🌡 Air<br>${d["terra-air/temp_air"]} °C</div>
-      <div class="card">🌱 Sol<br>${d["terra-air/temp_sol"]} °C</div>
-      <div class="card">💧 Hum air<br>${d["terra-air/humidite_air"]} %</div>
-      <div class="card">🌿 Hum sol<br>${d["terra-air/hum_sol"]} %</div>
-      <div class="card">📈 Pression<br>${d["terra-air/pression"]} hPa</div>
-      <div class="card">🚰 Réservoir<br>${d["terra-air/reservoir"]}</div>
-      <div class="card">⏰ Heure<br>${d["terra-air/heure"]}</div>
-    `;
+    document.getElementById("status").innerText = "✅ Connecté";
 
   } catch (e) {
-    document.getElementById("data").innerHTML = "❌ Erreur connexion API";
-    document.getElementById("debug").innerText += "\nERREUR:\n" + e;
+    document.getElementById("status").innerText = "❌ Erreur API";
+    console.error(e);
   }
 }
 
-setInterval(loadData, 5000);
+setInterval(loadData, 3000);
 loadData();
+
 </script>
 
 </body>
