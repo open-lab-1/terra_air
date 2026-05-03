@@ -18,21 +18,37 @@
       display: inline-block;
       min-width: 200px;
     }
+    #debug {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #aaa;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
 
 <h1>🌱 Terra Air Dashboard</h1>
 
-<div id="data"></div>
+<div id="data">Chargement...</div>
+
+<div id="debug">Debug...</div>
 
 <script>
 const API_URL = "https://stallion-tweet-savior.ngrok-free.dev/data";
 
 async function loadData() {
   try {
+    document.getElementById("debug").innerText = "Connexion à " + API_URL;
+
     const res = await fetch(API_URL);
-    const d = await res.json();
+
+    document.getElementById("debug").innerText += "\nStatus: " + res.status;
+
+    const text = await res.text();
+    document.getElementById("debug").innerText += "\nRéponse brute:\n" + text;
+
+    const d = JSON.parse(text);
 
     document.getElementById("data").innerHTML = `
       <div class="card">🌡 Air<br>${d["terra-air/temp_air"]} °C</div>
@@ -43,12 +59,14 @@ async function loadData() {
       <div class="card">🚰 Réservoir<br>${d["terra-air/reservoir"]}</div>
       <div class="card">⏰ Heure<br>${d["terra-air/heure"]}</div>
     `;
+
   } catch (e) {
     document.getElementById("data").innerHTML = "❌ Erreur connexion API";
+    document.getElementById("debug").innerText += "\nERREUR:\n" + e;
   }
 }
 
-setInterval(loadData, 3000);
+setInterval(loadData, 5000);
 loadData();
 </script>
 
